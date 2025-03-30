@@ -41,7 +41,13 @@ def generate_itinerary(mood: str, preferences: str = None, user_id: str = None) 
         
         response = client.responses.create(
             model = "gpt-4o",
-            input = prompt
+            input = prompt,
+            temperature = 0.8,  # Higher temperature for more randomness
+            max_tokens = 1000,  # Limit response length
+            top_p = 0.9,  # Nucleus sampling for more diverse outputs
+            frequency_penalty = 0.5,  # Reduce repetition
+            presence_penalty = 0.5,  # Encourage new topics
+            stop = None  # No specific stop sequence
         )
         
         # Extract the content from the response structure
@@ -71,69 +77,58 @@ def generate_itinerary(mood: str, preferences: str = None, user_id: str = None) 
 
 def refine_itinerary(itinerary_id: int, refinement_request: str) -> str:
     """
-    Refine an existing itinerary based on user feedback or specific requests.
+    Refine an existing itinerary based on the refinement request.
     """
     try:
-        logger.info(f"Refining itinerary with ID: {itinerary_id}")
+        # Get the current itinerary
+        result = supabase.table("itineraries").select("*").eq("id", itinerary_id).execute()
+        if not result.data:
+            raise ValueError("Itinerary not found")
         
-        # Fetch the original itinerary from Supabase
-        try:
-            result = supabase.table("itineraries").select("*").eq("id", itinerary_id).execute()
-            if not result.data:
-                raise ValueError(f"Itinerary with ID {itinerary_id} not found")
-            original_itinerary = result.data[0]
-            # logger.info(f"Original itinerary data: {original_itinerary}")
-        except Exception as e:
-            logger.error(f"Failed to fetch itinerary from database: {str(e)}")
-            raise
+        current_itinerary = result.data[0]
+        logger.info(f"Refining itinerary {itinerary_id}")
 
-        # Create refinement prompt
+        # Create the prompt for refinement
         prompt = (
-            f"Here is the original itinerary:\n\n{original_itinerary['content']}\n\n"
-            f"Please refine this itinerary according to the following request: {refinement_request}\n\n"
+            f"Here's the current itinerary:\n\n{current_itinerary['content']}\n\n"
+            f"Please refine it according to this request: {refinement_request}\n\n"
             "Provide a complete refined version of the itinerary."
         )
         
-        # Get refined version from GPT
+        # Generate refined version
         response = client.responses.create(
             model = "gpt-4o",
-            input = prompt
+            input = prompt,
+            temperature = 0.7,  # Slightly lower temperature for refinements
+            max_tokens = 1000,
+            top_p = 0.9,
+            frequency_penalty = 0.3,
+            presence_penalty = 0.3,
+            stop = None
         )
         
         refined_itinerary = response.output[0].content[0].text
         logger.info("Successfully generated refined itinerary")
 
-        # Update the itinerary in Supabase
+        # Save the refinement to history
         try:
-            # Store current content in history before updating
-            # Always use 'Initial version' if no refinement request exists
-            history_refinement_request = original_itinerary.get('refinement_request') or 'Initial version'
-            logger.info(f"Using refinement request for history: {history_refinement_request}")
-            
             history_data = {
                 "itinerary_id": itinerary_id,
-                "content": original_itinerary['content'],
-                "refinement_request": history_refinement_request
-            }
-            logger.info(f"History data to be inserted: {history_data}")
-            
-            supabase.table("refinement_history").insert(history_data).execute()
-            logger.info("Successfully inserted history record")
-
-            # Update the itinerary
-            update_data = {
                 "content": refined_itinerary,
-                "refined": True,
-                "refinement_request": refinement_request,
-                "refinement_count": original_itinerary.get('refinement_count', 0) + 1
+                "refinement_request": refinement_request
             }
-            logger.info(f"Update data for itinerary: {update_data}")
-            
-            supabase.table("itineraries").update(update_data).eq("id", itinerary_id).execute()
-            logger.info("Successfully updated refined itinerary in database")
+            supabase.table("refinement_history").insert(history_data).execute()
+            logger.info("Successfully saved refinement to history")
+
+            # Update the main itinerary
+            supabase.table("itineraries")\
+                .update({"content": refined_itinerary})\
+                .eq("id", itinerary_id)\
+                .execute()
+            logger.info("Successfully updated main itinerary")
         except Exception as e:
-            logger.error(f"Failed to update refined itinerary in database: {str(e)}")
-            # Continue execution even if database update fails
+            logger.error(f"Failed to save refinement: {str(e)}")
+            raise
 
         return refined_itinerary
     except Exception as e:
