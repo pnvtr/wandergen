@@ -82,7 +82,7 @@ def refine_itinerary(itinerary_id: int, refinement_request: str) -> str:
             if not result.data:
                 raise ValueError(f"Itinerary with ID {itinerary_id} not found")
             original_itinerary = result.data[0]
-            logger.info(f"Original itinerary data: {original_itinerary}")
+            # logger.info(f"Original itinerary data: {original_itinerary}")
         except Exception as e:
             logger.error(f"Failed to fetch itinerary from database: {str(e)}")
             raise
