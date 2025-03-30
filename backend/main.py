@@ -1,20 +1,44 @@
 from fastapi import FastAPI, HTTPException
-from schemas import MoodInput
-from model import generate_itinerary
+from model import generate_itinerary, refine_itinerary
+from logger import setup_logger
+from schemas import (
+    ItineraryRequest,
+    RefinementRequest,
+    ItineraryResponse,
+    RefinedItineraryResponse,
+    HealthResponse
+)
 
-app = FastAPI()
+# Setup logger
+logger = setup_logger("api")
 
-@app.post("/generate-trip")
-async def generate_trip(input: MoodInput):
-    """
-    Endpoint to generate a trip itinerary based on the user's mood and preferences.
-    """
+app = FastAPI(
+    title="WanderGen API",
+    description="API for generating and refining travel itineraries using AI",
+    version="1.0.0"
+)
+
+@app.post("/generate", response_model=ItineraryResponse)
+async def create_itinerary(request: ItineraryRequest):
     try:
-        itinerary = generate_itinerary(input.mood, input.preferences)
-        return {"itinerary": itinerary}
+        itinerary = generate_itinerary(request.mood, request.preferences)
+        return ItineraryResponse(itinerary=itinerary)
     except Exception as e:
+        logger.error(f"Failed to generate itinerary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to WanderGen API!"}
+@app.post("/refine", response_model=RefinedItineraryResponse)
+async def refine_existing_itinerary(request: RefinementRequest):
+    try:
+        refined = refine_itinerary(request.itinerary_id, request.refinement_request)
+        return RefinedItineraryResponse(refined_itinerary=refined)
+    except ValueError as e:
+        logger.error(f"Invalid request: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to refine itinerary: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    return HealthResponse(status="healthy")

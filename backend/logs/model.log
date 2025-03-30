@@ -2,3 +2,19 @@
 2025-03-30 12:06:32,747 - model - INFO - Generating itinerary for mood: happy, preferences: sports and adventurous
 2025-03-30 12:07:08,221 - model - INFO - Successfully generated itinerary
 2025-03-30 12:07:08,456 - model - INFO - Successfully saved itinerary to database
+2025-03-30 12:12:43,009 - model - INFO - OpenAI client initialized successfully
+2025-03-30 12:12:43,010 - model - INFO - Refining itinerary with ID: 1
+2025-03-30 12:12:55,322 - model - INFO - Successfully generated refined itinerary
+2025-03-30 12:12:55,450 - model - ERROR - Failed to update refined itinerary in database: {'code': 'PGRST204', 'details': None, 'hint': None, 'message': "Could not find the 'refined' column of 'itineraries' in the schema cache"}
+2025-03-30 12:14:08,304 - model - INFO - OpenAI client initialized successfully
+2025-03-30 12:15:46,509 - model - INFO - Refining itinerary with ID: 3
+2025-03-30 12:16:03,340 - model - INFO - Successfully generated refined itinerary
+2025-03-30 12:16:03,445 - model - ERROR - Failed to update refined itinerary in database: {'code': 'PGRST204', 'details': None, 'hint': None, 'message': "Could not find the 'refined' column of 'itineraries' in the schema cache"}
+2025-03-30 12:17:25,093 - model - INFO - OpenAI client initialized successfully
+2025-03-30 12:18:23,970 - model - INFO - OpenAI client initialized successfully
+2025-03-30 12:18:29,874 - model - INFO - Refining itinerary with ID: 3
+2025-03-30 12:18:46,031 - model - INFO - Successfully generated refined itinerary
+2025-03-30 12:18:46,150 - model - INFO - Successfully updated refined itinerary in database
+2025-03-30 12:20:12,563 - model - INFO - Refining itinerary with ID: 3
+2025-03-30 12:20:32,440 - model - INFO - Successfully generated refined itinerary
+2025-03-30 12:20:32,610 - model - INFO - Successfully updated refined itinerary in database
