@@ -1,13 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from schemas import MoodInput
 from model import generate_itinerary
 
 app = FastAPI()
-
-# Define a request model for mood input
-class MoodInput(BaseModel):
-    mood: str
-    preferences: str = None  # Optional for additional details
 
 @app.post("/generate-trip")
 async def generate_trip(input: MoodInput):
