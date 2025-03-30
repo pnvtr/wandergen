@@ -31,4 +31,4 @@ def generate_itinerary(mood: str, preferences: str = None) -> str:
     itinerary = response.output[0].content[0].text
     return itinerary
 
-print(generate_itinerary("happy", "sports and adventurous"))
+# print(generate_itinerary("happy", "sports and adventurous"))
