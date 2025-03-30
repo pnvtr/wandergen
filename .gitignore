@@ -7,8 +7,10 @@ logs/
 
 # Python cache files
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # Database migrations
-migrations/
+/migrations/
+/backend/migrations/
