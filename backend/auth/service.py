@@ -34,4 +34,36 @@ class AuthService:
                 logger.error(f"Login attempted with unconfirmed email: {email}")
                 raise ValueError("Please verify your email before logging in. Check your inbox for the verification link.")
             logger.error(f"Failed to sign in user: {str(e)}")
+            raise
+
+class UserProfileService:
+    @staticmethod
+    async def get_profile(user_id: str) -> dict:
+        try:
+            result = supabase.table("user_profiles").select("*").eq("id", user_id).single().execute()
+            return result.data
+        except Exception as e:
+            logger.error(f"Failed to get user profile: {str(e)}")
+            raise
+
+    @staticmethod
+    async def update_profile(user_id: str, profile_data: dict) -> dict:
+        try:
+            result = supabase.table("user_profiles").update(profile_data).eq("id", user_id).execute()
+            return result.data[0]
+        except Exception as e:
+            logger.error(f"Failed to update user profile: {str(e)}")
+            raise
+
+    @staticmethod
+    async def create_profile(user_id: str, email: str) -> dict:
+        try:
+            profile_data = {
+                "id": user_id,
+                "email": email
+            }
+            result = supabase.table("user_profiles").insert(profile_data).execute()
+            return result.data[0]
+        except Exception as e:
+            logger.error(f"Failed to create user profile: {str(e)}")
             raise 

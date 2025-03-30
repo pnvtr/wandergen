@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from .models import UserCreate, UserLogin, UserResponse
-from .service import AuthService
+from fastapi import APIRouter, HTTPException, Depends
+from .models import UserCreate, UserLogin, UserResponse, UserProfileResponse, UserProfileUpdate
+from .service import AuthService, UserProfileService
+from .dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -8,6 +9,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def signup(user: UserCreate):
     try:
         auth_response = await AuthService.sign_up(user.email, user.password)
+        # Create user profile after successful signup
+        if auth_response.user:
+            await UserProfileService.create_profile(auth_response.user.id, user.email)
         # Handle the case where session might not be present
         return UserResponse(
             id=auth_response.user.id if auth_response.user else None,
@@ -30,4 +34,23 @@ async def login(user: UserLogin):
         # Handle email verification error specifically
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid credentials") 
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@router.get("/profile", response_model=UserProfileResponse)
+async def get_user_profile(user = Depends(get_current_user)):
+    try:
+        profile = await UserProfileService.get_profile(user.id)
+        return profile
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+@router.put("/profile", response_model=UserProfileResponse)
+async def update_user_profile(
+    profile: UserProfileUpdate,
+    user = Depends(get_current_user)
+):
+    try:
+        updated_profile = await UserProfileService.update_profile(user.id, profile.dict())
+        return updated_profile
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) 

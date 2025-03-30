@@ -1,7 +1,15 @@
 from fastapi import FastAPI, Depends, HTTPException
 from auth.router import router as auth_router
 from auth.dependencies import get_current_user
-from model import generate_itinerary, refine_itinerary, revert_to_original, get_refinement_history
+from model import (
+    generate_itinerary, 
+    refine_itinerary, 
+    revert_to_original, 
+    get_refinement_history, 
+    toggle_favorite_itinerary, 
+    get_favorite_itineraries,
+    get_user_itineraries
+)
 from logger import setup_logger
 from schemas import (
     ItineraryRequest,
@@ -9,8 +17,11 @@ from schemas import (
     ItineraryResponse,
     RefinedItineraryResponse,
     HealthResponse,
-    RefinementHistoryResponse
+    RefinementHistoryResponse,
+    FavoriteUpdate,
+    ItineraryList
 )
+from supabase import create_client
 
 # Setup logger
 logger = setup_logger("api")
@@ -28,11 +39,11 @@ app.include_router(auth_router)
 @app.post("/generate", response_model=ItineraryResponse)
 async def create_itinerary(
     request: ItineraryRequest,
-    user = Depends(get_current_user)  # Add authentication
+    user = Depends(get_current_user)
 ):
     try:
-        itinerary = generate_itinerary(request.mood, request.preferences)
-        return ItineraryResponse(itinerary=itinerary)
+        itinerary = generate_itinerary(request.mood, request.preferences, user.id)
+        return itinerary
     except Exception as e:
         logger.error(f"Failed to generate itinerary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -79,3 +90,33 @@ async def get_history(itinerary_id: int, user = Depends(get_current_user)):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     return HealthResponse(status="healthy")
+
+@app.post("/itineraries/{itinerary_id}/favorite", response_model=ItineraryResponse)
+async def toggle_favorite(
+    itinerary_id: int,
+    favorite: FavoriteUpdate,
+    user = Depends(get_current_user)
+):
+    try:
+        updated = toggle_favorite_itinerary(itinerary_id, user.id, favorite.is_favorite)
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/itineraries/favorites", response_model=ItineraryList)
+async def get_favorite_itineraries_endpoint(user = Depends(get_current_user)):
+    try:
+        favorites = await get_favorite_itineraries(user.id)
+        return ItineraryList(itineraries=favorites)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/itineraries", response_model=ItineraryList)
+async def get_user_itineraries_endpoint(user = Depends(get_current_user)):
+    try:
+        itineraries = get_user_itineraries(user.id)
+        return ItineraryList(itineraries=itineraries)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -25,13 +25,13 @@ except Exception as e:
     logger.error(f"Failed to initialize OpenAI client: {str(e)}")
     raise
 
-def generate_itinerary(mood: str, preferences: str = None) -> str:
+def generate_itinerary(mood: str, preferences: str = None, user_id: str = None) -> dict:
     """
     Generate a travel itinerary based on the given mood and preferences.
     Saves the itinerary to Supabase database.
     """
     try:
-        logger.info(f"Generating itinerary for mood: {mood}, preferences: {preferences}")
+        logger.info(f"Generating itinerary for user {user_id}, mood: {mood}")
         
         prompt = (
             f"Generate a detailed 3-day travel itinerary for a person feeling '{mood}'. "
@@ -54,15 +54,17 @@ def generate_itinerary(mood: str, preferences: str = None) -> str:
                 "mood": mood,
                 "preferences": preferences,
                 "content": itinerary,
-                "original_content": itinerary  # Store original content
+                "user_id": user_id,
+                "original_content": itinerary,
+                "is_favorite": False
             }
-            supabase.table("itineraries").insert(data).execute()
+            result = supabase.table("itineraries").insert(data).execute()
             logger.info("Successfully saved itinerary to database")
+            return result.data[0]
         except Exception as e:
             logger.error(f"Failed to save itinerary to database: {str(e)}")
-            # Continue execution even if database save fails
+            raise
 
-        return itinerary
     except Exception as e:
         logger.error(f"Failed to generate itinerary: {str(e)}")
         raise
@@ -194,6 +196,63 @@ def get_refinement_history(itinerary_id: int) -> List[Dict[str, Any]]:
         return result.data
     except Exception as e:
         logger.error(f"Failed to fetch refinement history: {str(e)}")
+        raise
+
+def toggle_favorite_itinerary(itinerary_id: int, user_id: str, is_favorite: bool) -> dict:
+    """
+    Toggle favorite status of an itinerary.
+    Returns the updated itinerary.
+    """
+    try:
+        # Verify ownership
+        result = supabase.table("itineraries")\
+            .select("*")\
+            .eq("id", itinerary_id)\
+            .eq("user_id", user_id)\
+            .execute()
+            
+        if not result.data:
+            raise ValueError("Itinerary not found")
+            
+        # Update favorite status
+        updated = supabase.table("itineraries")\
+            .update({"is_favorite": is_favorite})\
+            .eq("id", itinerary_id)\
+            .execute()
+            
+        return updated.data[0]
+    except Exception as e:
+        logger.error(f"Failed to toggle favorite status: {str(e)}")
+        raise
+
+async def get_favorite_itineraries(user_id: str) -> list:
+    """
+    Get all favorite itineraries for a user.
+    """
+    try:
+        result = supabase.table("itineraries")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .eq("is_favorite", True)\
+            .execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Failed to get favorite itineraries: {str(e)}")
+        raise
+
+def get_user_itineraries(user_id: str) -> list:
+    """
+    Get all itineraries for a specific user.
+    """
+    try:
+        result = supabase.table("itineraries")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .order("created_at", desc=True)\
+            .execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Failed to get user itineraries: {str(e)}")
         raise
 
 # Example usage

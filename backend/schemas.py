@@ -14,8 +14,26 @@ class RefinementRequest(BaseModel):
     itinerary_id: int
     refinement_request: str
 
-class ItineraryResponse(BaseModel):
-    itinerary: str
+class ItineraryBase(BaseModel):
+    mood: str
+    preferences: Optional[str] = None
+
+class ItineraryCreate(ItineraryBase):
+    pass
+
+class ItineraryResponse(ItineraryBase):
+    id: int
+    content: str
+    user_id: str
+    is_favorite: bool
+    created_at: datetime
+    updated_at: datetime
+
+class ItineraryList(BaseModel):
+    itineraries: List[ItineraryResponse]
+
+class FavoriteUpdate(BaseModel):
+    is_favorite: bool
 
 class RefinedItineraryResponse(BaseModel):
     refined_itinerary: str
