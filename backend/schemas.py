@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 class MoodInput(BaseModel):
     mood: str
@@ -21,3 +22,13 @@ class RefinedItineraryResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+
+class RefinementHistoryItem(BaseModel):
+    id: int
+    itinerary_id: int
+    content: str
+    refinement_request: str
+    created_at: datetime
+
+class RefinementHistoryResponse(BaseModel):
+    history: List[RefinementHistoryItem]
