@@ -1,0 +1,4 @@
+2025-03-30 12:06:32,746 - model - INFO - OpenAI client initialized successfully
+2025-03-30 12:06:32,747 - model - INFO - Generating itinerary for mood: happy, preferences: sports and adventurous
+2025-03-30 12:07:08,221 - model - INFO - Successfully generated itinerary
+2025-03-30 12:07:08,456 - model - INFO - Successfully saved itinerary to database
