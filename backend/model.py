@@ -1,6 +1,7 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from database import supabase
 
 # Load environment variables from .env file
 load_dotenv()
@@ -15,6 +16,7 @@ client = OpenAI(api_key=api_key)
 def generate_itinerary(mood: str, preferences: str = None) -> str:
     """
     Generate a travel itinerary based on the given mood and preferences.
+    Saves the itinerary to Supabase database.
     """
     prompt = (
         f"Generate a detailed 3-day travel itinerary for a person feeling '{mood}'. "
@@ -29,6 +31,17 @@ def generate_itinerary(mood: str, preferences: str = None) -> str:
     
     # Extract the content from the response structure
     itinerary = response.output[0].content[0].text
+
+    # Save to Supabase
+    data = {
+        "mood": mood,
+        "preferences": preferences,
+        "content": itinerary
+    }
+    supabase.table("itineraries").insert(data).execute()
+
     return itinerary
 
-# print(generate_itinerary("happy", "sports and adventurous"))
+# Example usage
+if __name__ == "__main__":
+    print(generate_itinerary("happy", "sports and adventurous"))
